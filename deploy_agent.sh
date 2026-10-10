@@ -27,3 +27,31 @@ preflight_checks() {
     echo "  OK: all template files present"
 }
 
+# ---------- Feature 1, step 2: name the project ----------
+create_structure() {
+    local name
+    read -r -p "Enter a name for the project directory: " name
+    if [[ ! $name =~ ^[A-Za-z0-9_-]+$ ]]; then
+        echo "ERROR: The name can contain only letters, numbers, underscores (_), and hyphens (-), and it cannot be empty." >&2
+        return 1
+    fi
+    PROJECT_DIR="attendance_tracker_${name}"
+
+    if [ -e "$PROJECT_DIR" ]; then
+        echo "'$PROJECT_DIR' already exists."
+        local ans
+        read -r -p "Overwrite it? (y/N): " ans
+        if [[ $ans =~ ^[Yy]$ ]]; then
+            rm -rf "$PROJECT_DIR" || { echo "ERROR: Could not remove '$PROJECT_DIR'." >&2; return 1; }
+        else
+            echo "Aborting: the existing directory was left untouched." >&2
+            return 1
+        fi
+    fi
+
+    if ! mkdir -p "$PROJECT_DIR/Helpers" "$PROJECT_DIR/reports"; then
+        echo "ERROR: Could not create '$PROJECT_DIR'. Check that you have write permission here." >&2
+        return 1
+    fi
+    echo "Created $PROJECT_DIR/{Helpers,reports}"
+}
