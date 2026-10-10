@@ -105,3 +105,16 @@ populate_files() {
             ;;
     esac
 }
+
+# ---------- Feature 1, step 4: set permissions ----------
+set_permissions() {
+    if ! chmod +x "$PROJECT_DIR/attendance_checker.py" || ! chmod 600 "$PROJECT_DIR/Helpers/config.json"; then
+        echo "ERROR: Could not set file permissions." >&2
+        return 1
+    fi
+    echo "Permissions set:"
+    echo "  attendance_checker.py -> made executable (chmod +x)"
+    echo "  Helpers/config.json   -> restricted to owner read/write only (chmod 600)"
+    ls -l "$PROJECT_DIR/attendance_checker.py" "$PROJECT_DIR/Helpers/config.json"
+}
+
