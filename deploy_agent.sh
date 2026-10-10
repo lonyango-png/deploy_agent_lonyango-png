@@ -55,3 +55,53 @@ create_structure() {
     fi
     echo "Created $PROJECT_DIR/{Helpers,reports}"
 }
+
+# ---------- Feature 1, step 3: populate files ----------
+read_count() {
+    local n
+    read -r -p "$1 (1-$2): " n
+    if [[ ! $n =~ ^[0-9]+$ ]] || [ "$n" -lt 1 ] || [ "$n" -gt "$2" ]; then
+        echo "ERROR: Enter a whole number between 1 and $2." >&2
+        return 1
+    fi
+    echo "$n"
+}
+
+populate_files() {
+    cp "$TEMPLATES_DIR/attendance_checker.py" "$PROJECT_DIR/" || return 1
+    cp "$TEMPLATES_DIR/config.json" "$PROJECT_DIR/Helpers/" || return 1
+
+    local choice n
+    echo "How should the roster (assets.csv) be built?"
+    echo "  A) Copy from template"
+    echo "  B) Generate a fresh roster"
+    read -r -p "Choose A or B: " choice
+
+    case "${choice^^}" in
+        A)
+            local available
+            available=$(( $(wc -l < "$TEMPLATES_DIR/assets.csv") - 1 ))
+            n=$(read_count "How many students to copy" "$available") || return 1
+            head -n $((n + 1)) "$TEMPLATES_DIR/assets.csv" > "$PROJECT_DIR/Helpers/assets.csv" || return 1
+            echo "Copied the header row and $n students (each with 4 prior sessions; total_sessions stays at 5)."
+            ;;
+        B)
+            local names=("Alice Johnson" "Bob Smith" "Carol White" "David Brown" "Eve Davis"
+                         "Frank Miller" "Grace Wilson" "Henry Moore" "Ivy Taylor" "Jack Anderson")
+            local emails=("alice" "bob" "carol" "david" "eve" "frank" "grace" "henry" "ivy" "jack")
+            n=$(read_count "How many students to generate" "${#names[@]}") || return 1
+            {
+                echo "Email,Names,Attendance Count,Absence Count"
+                for ((i = 0; i < n; i++)); do
+                    echo "${emails[i]}@example.com,${names[i]},0,0"
+                done
+            } > "$PROJECT_DIR/Helpers/assets.csv" || return 1
+            sed -i 's/"total_sessions": *[0-9]*/"total_sessions": 1/' "$PROJECT_DIR/Helpers/config.json" || return 1
+            echo "Generated $n students (attendance and absence counts start at 0; total_sessions set to 1)."
+            ;;
+        *)
+            echo "ERROR: Invalid choice. Enter A or B." >&2
+            return 1
+            ;;
+    esac
+}
