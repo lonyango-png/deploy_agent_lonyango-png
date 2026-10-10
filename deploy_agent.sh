@@ -118,3 +118,38 @@ set_permissions() {
     ls -l "$PROJECT_DIR/attendance_checker.py" "$PROJECT_DIR/Helpers/config.json"
 }
 
+# ---------- Feature 1 driver ----------
+deploy_application() {
+    preflight_checks || return 1
+    create_structure || return 1
+    populate_files   || return 1
+    set_permissions  || return 1
+    echo "Deployment steps 1-4 complete."
+}
+
+# ---------- Placeholders for later features ----------
+run_application() { echo "Feature 2 not implemented yet."; }
+archive_logs()    { echo "Feature 3 not implemented yet."; }
+
+# ---------- Menu ----------
+main_menu() {
+    while true; do
+        echo
+        echo "===== Attendance Tracker Deploy Agent ====="
+        echo "1) Deploy the application"
+        echo "2) Run the application"
+        echo "3) Archive log files"
+        echo "4) Quit"
+        read -r -p "Select an option: " opt
+        case "$opt" in
+            1) deploy_application ;;
+            2) run_application ;;
+            3) archive_logs ;;
+            4) echo "Goodbye."; exit 0 ;;
+            *) echo "Invalid option." ;;
+        esac
+    done
+}
+
+main_menu
+
