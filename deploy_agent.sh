@@ -159,6 +159,30 @@ update_thresholds() {
     echo "Thresholds updated: warning is now $warn and failure is now $fail."
 }
 
+# ---------- Feature 2: run the application ----------
+launch_app() {   # $1 = project directory
+    if [ ! -f "$1/attendance_checker.py" ]; then
+        echo "ERROR: Couldn't find $1/attendance_checker.py. Please deploy the project first." >&2
+        return 1
+    fi
+    echo "Starting the attendance checker in $1 ..."
+    ( cd "$1" && python3 attendance_checker.py )
+}
+
+run_application() {
+    local name
+    read -r -p "Enter the project name to run: " name
+    if [[ ! $name =~ ^[A-Za-z0-9_-]+$ ]]; then
+        echo "ERROR: That isn't a valid project name. Use only letters, numbers, underscores (_), and hyphens (-)." >&2
+        return 1
+    fi
+    if [ ! -d "attendance_tracker_${name}" ]; then
+        echo "ERROR: Couldn't find 'attendance_tracker_${name}'. Please deploy it first (option 1)." >&2
+        return 1
+    fi
+    launch_app "attendance_tracker_${name}"
+}
+
 # ---------- Feature 1 driver ----------
 deploy_application() {
     preflight_checks || return 1
@@ -166,11 +190,11 @@ deploy_application() {
     populate_files   || return 1
     set_permissions  || return 1
     update_thresholds|| return 1
-    echo "Deployment steps 1-5 complete."
+    echo "Deployment complete. Verifying by running the application (step 6)..."
+    launch_app "$PROJECT_DIR" || return 1
 }
 
 # ---------- Placeholders for later features ----------
-run_application() { echo "Feature 2 not implemented yet."; }
 archive_logs()    { echo "Feature 3 not implemented yet."; }
 
 # ---------- Menu ----------
