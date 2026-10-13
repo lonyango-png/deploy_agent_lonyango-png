@@ -247,11 +247,14 @@ cleanup() {
 
 # ---------- Feature 1 driver ----------
 deploy_application() {
-    preflight_checks || return 1
-    create_structure || return 1
-    populate_files   || return 1
-    set_permissions  || return 1
-    update_thresholds|| return 1
+    CREATED_DIR=""
+    trap cleanup SIGINT SIGTSTP
+    if ! { preflight_checks && create_structure && populate_files \
+           && set_permissions && update_thresholds; }; then
+        trap - SIGINT SIGTSTP
+        return 1
+    fi
+    trap - SIGINT SIGTSTP
     echo "Deployment complete. Verifying by running the application (step 6)..."
     launch_app "$PROJECT_DIR" || return 1
 }
