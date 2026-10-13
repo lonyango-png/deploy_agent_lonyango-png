@@ -183,6 +183,45 @@ run_application() {
     launch_app "attendance_tracker_${name}"
 }
 
+# ---------- Feature 3: archive the log files ----------
+archive_logs() {
+    local name proj stamp type src dest_dir dest
+    local archived=0
+
+    read -r -p "Enter the project name whose logs to archive: " name
+    if [[ ! $name =~ ^[A-Za-z0-9_-]+$ ]]; then
+        echo "ERROR: That isn't a valid project name. Use only letters, numbers, underscores (_), and hyphens (-)." >&2
+        return 1
+    fi
+
+    proj="attendance_tracker_${name}"
+    if [ ! -d "$proj" ]; then
+        echo "ERROR: Couldn't find '$proj'. Please deploy it first (option 1)." >&2
+        return 1
+    fi
+
+    stamp=$(date +%Y%m%d_%H%M%S)
+    for type in attendance absent; do
+        src="$proj/reports/${type}.log"
+        if [ ! -f "$src" ]; then
+            echo "  Skipped: Couldn't find $src, so there's nothing to archive."
+            continue
+        fi
+
+        dest_dir="$proj/archives/$type"
+        dest="$dest_dir/${type}_${stamp}.log"
+        if ! mkdir -p "$dest_dir" || ! mv "$src" "$dest"; then
+            echo "  ERROR: Couldn't archive $src. Check your permissions and try again." >&2
+            continue
+        fi
+
+        echo "  Archived: $src -> $dest"
+        archived=$((archived + 1))
+    done
+
+    echo "Archive finished. $archived log file(s) were archived."
+}
+
 # ---------- Feature 1 driver ----------
 deploy_application() {
     preflight_checks || return 1
@@ -193,9 +232,6 @@ deploy_application() {
     echo "Deployment complete. Verifying by running the application (step 6)..."
     launch_app "$PROJECT_DIR" || return 1
 }
-
-# ---------- Placeholders for later features ----------
-archive_logs()    { echo "Feature 3 not implemented yet."; }
 
 # ---------- Menu ----------
 main_menu() {
