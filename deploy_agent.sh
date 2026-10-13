@@ -118,13 +118,55 @@ set_permissions() {
     ls -l "$PROJECT_DIR/attendance_checker.py" "$PROJECT_DIR/Helpers/config.json"
 }
 
+# ---------- Feature 1, step 5: update alert thresholds ----------
+read_threshold() {   # $1 = label, $2 = default; echoes a validated number (0-100)
+    local val
+    while true; do
+        read -r -p "New $1 threshold (default $2): " val
+        if [[ -z $val ]]; then
+            echo "ERROR: Please enter a value. This can't be left blank." >&2
+        elif [[ ! $val =~ ^[0-9]{1,3}$ ]]; then   # limit to 1-3 digits
+            echo "ERROR: '$val' isn't a valid number. Please use 1 to 3 digits only." >&2
+        elif [ "$val" -gt 100 ]; then
+            echo "ERROR: A percentage can't be higher than 100." >&2
+        else
+            echo $((10#$val))   # strip leading zeros (08 becomes 8)
+            return 0
+        fi
+    done
+}
+
+update_thresholds() {
+    local ans warn fail
+    read -r -p "Update the attendance alert thresholds? (y/N): " ans
+    if [[ ! $ans =~ ^[Yy]$ ]]; then
+        echo "No changes made. Keeping the default thresholds (warning 75, failure 50)."
+        return 0
+    fi
+
+    while true; do
+        warn=$(read_threshold "warning" 75)
+        fail=$(read_threshold "failure" 50)
+        if [ "$warn" -gt "$fail" ]; then
+            break
+        fi
+        echo "ERROR: The warning threshold ($warn) must be higher than the failure threshold ($fail). Let's try again." >&2
+    done
+
+    local cfg="$PROJECT_DIR/Helpers/config.json"
+    sed -i "s/\"warning\": *[0-9]*/\"warning\": $warn/" "$cfg" || return 1
+    sed -i "s/\"failure\": *[0-9]*/\"failure\": $fail/" "$cfg" || return 1
+    echo "Thresholds updated: warning is now $warn and failure is now $fail."
+}
+
 # ---------- Feature 1 driver ----------
 deploy_application() {
     preflight_checks || return 1
     create_structure || return 1
     populate_files   || return 1
     set_permissions  || return 1
-    echo "Deployment steps 1-4 complete."
+    update_thresholds|| return 1
+    echo "Deployment steps 1-5 complete."
 }
 
 # ---------- Placeholders for later features ----------
