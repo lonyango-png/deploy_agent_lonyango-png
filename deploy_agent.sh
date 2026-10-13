@@ -222,6 +222,28 @@ archive_logs() {
     echo "Archive finished. $archived log file(s) were archived."
 }
 
+# ---------- Signal handling: Ctrl+C / Ctrl+Z during deploy ----------
+CREATED_DIR=""
+
+cleanup() {
+    trap - SIGINT SIGTSTP
+    echo
+    echo "Deployment was interrupted." >&2
+
+    if [ -n "$CREATED_DIR" ] && [ -d "$CREATED_DIR" ]; then
+        local zipfile="${CREATED_DIR}_archive.zip"
+        if zip -rq "$zipfile" "$CREATED_DIR"; then
+            echo "Saved the incomplete project to $zipfile"
+            rm -rf "$CREATED_DIR" && echo "Removed the incomplete directory $CREATED_DIR"
+        else
+            echo "ERROR: Couldn't create the zip file, so '$CREATED_DIR' was kept to avoid losing your work." >&2
+        fi
+    else
+        echo "No project directory had been created yet, so there's nothing to archive."
+    fi
+    exit 130
+}
+
 # ---------- Feature 1 driver ----------
 deploy_application() {
     preflight_checks || return 1
