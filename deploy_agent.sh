@@ -49,6 +49,7 @@ create_structure() {
         fi
     fi
 
+    CREATED_DIR="$PROJECT_DIR"
     if ! mkdir -p "$PROJECT_DIR/Helpers" "$PROJECT_DIR/reports"; then
         echo "ERROR: Could not create '$PROJECT_DIR'. Check that you have write permission here." >&2
         return 1
