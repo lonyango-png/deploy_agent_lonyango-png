@@ -49,6 +49,7 @@ create_structure() {
         fi
     fi
 
+    CREATED_DIR="$PROJECT_DIR"
     if ! mkdir -p "$PROJECT_DIR/Helpers" "$PROJECT_DIR/reports"; then
         echo "ERROR: Could not create '$PROJECT_DIR'. Check that you have write permission here." >&2
         return 1
@@ -222,13 +223,38 @@ archive_logs() {
     echo "Archive finished. $archived log file(s) were archived."
 }
 
+# ---------- Signal handling: Ctrl+C / Ctrl+Z during deploy ----------
+CREATED_DIR=""
+
+cleanup() {
+    trap - SIGINT SIGTSTP
+    echo
+    echo "Deployment was interrupted." >&2
+
+    if [ -n "$CREATED_DIR" ] && [ -d "$CREATED_DIR" ]; then
+        local zipfile="${CREATED_DIR}_archive.zip"
+        if zip -rq "$zipfile" "$CREATED_DIR"; then
+            echo "Saved the incomplete project to $zipfile"
+            rm -rf "$CREATED_DIR" && echo "Removed the incomplete directory $CREATED_DIR"
+        else
+            echo "ERROR: Couldn't create the zip file, so '$CREATED_DIR' was kept to avoid losing your work." >&2
+        fi
+    else
+        echo "No project directory had been created yet, so there's nothing to archive."
+    fi
+    exit 130
+}
+
 # ---------- Feature 1 driver ----------
 deploy_application() {
-    preflight_checks || return 1
-    create_structure || return 1
-    populate_files   || return 1
-    set_permissions  || return 1
-    update_thresholds|| return 1
+    CREATED_DIR=""
+    trap cleanup SIGINT SIGTSTP
+    if ! { preflight_checks && create_structure && populate_files \
+           && set_permissions && update_thresholds; }; then
+        trap - SIGINT SIGTSTP
+        return 1
+    fi
+    trap - SIGINT SIGTSTP
     echo "Deployment complete. Verifying by running the application (step 6)..."
     launch_app "$PROJECT_DIR" || return 1
 }
