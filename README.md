@@ -135,3 +135,7 @@ Tested on Linux with bash and Python 3.8.10.
 ## Git workflow
 
 Development used feature branches, merged into `main` with merge commits: `feature-1-deploy` (Feature 1 steps 1 to 6 and Feature 2), `feature-3-archive`, `feature-signal-trap` and `docs-readme`. Each step was committed separately with a descriptive message.
+
+## Video walkthrough
+
+https://drive.google.com/file/d/13ao9pThaU5LZNcakCK02rYRSAo6e7te9/view?usp=sharing
